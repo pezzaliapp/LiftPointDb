@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiftPointDB v11</title>
+<style>
+:root{--bg:#07111f;--panel:#101827;--card:#172235;--line:#334155;--text:#f8fafc;--muted:#94a3b8;--yellow:#facc15;--green:#22c55e;--blue:#38bdf8;--red:#ef4444;--orange:#fb923c}
+*{box-sizing:border-box}body{margin:0;background:#07111f;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+header{padding:16px 20px;background:#050914;border-bottom:1px solid var(--line)}h1{margin:0;font-size:26px}small{color:var(--muted)}
+.wrap{max-width:1480px;margin:auto;padding:14px}.layout{display:grid;grid-template-columns:410px 1fr;gap:12px}@media(max-width:950px){.layout{grid-template-columns:1fr}}
+.panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}.card{background:var(--card);margin-top:10px}
+label{display:block;color:var(--muted);font-size:13px;margin:10px 0 5px}select,input,button{width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:#050914;color:var(--text);font-size:15px}
+button{background:var(--yellow);color:#111827;font-weight:800;margin-top:10px;cursor:pointer}.secondary{background:#334155;color:white}
+.notice{border-left:5px solid var(--yellow);background:#292524;border-radius:12px;padding:12px;margin-bottom:12px}.table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{border-bottom:1px solid var(--line);padding:7px;text-align:left}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;margin:2px}.ok{background:#14532d;color:#bbf7d0}.bad{background:#7f1d1d;color:#fecaca}.warn{background:#713f12;color:#fde68a}.info{background:#0c4a6e;color:#bae6fd}
+.svgbox{border:1px solid var(--line);background:#030712;border-radius:16px;overflow:hidden}.range{display:flex;gap:8px;align-items:center}.range input{accent-color:var(--yellow)}
+.top{display:grid;grid-template-columns:2fr repeat(6,1fr);gap:10px;margin-bottom:12px}.metric{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px}.metric span{font-size:12px;color:var(--muted)}.metric b{display:block;color:var(--yellow);font-size:21px}
+.measureBox{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-top:8px}.measureBox b{color:#facc15;font-size:22px}
+pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:10px;white-space:pre-wrap;max-height:260px;overflow:auto}
+</style>
+</head>
+<body>
+<header><h1>LiftPointDB v11</h1><small>AL 40 corretto: distanza attacchi braccio anteriore/posteriore sulla stessa colonna = 430 mm.</small></header>
+<div class="wrap">
+<div class="notice"><b>Correzione v11:</b> per AL 40 la distanza tra gli attacchi dei due bracci sulla stessa colonna è stata corretta a <b>430 mm</b>, come da schema allegato. Questo valore determina anche la posizione dei perni nel disegno.</div>
+
+<div class="top">
+<div class="metric"><span>Ponte</span><b id="mLift">—</b></div>
+<div class="metric"><span>Portata</span><b id="mCap">—</b></div>
+<div class="metric"><span>Interno colonne</span><b id="mInternal">—</b></div>
+<div class="metric"><span>Attacchi ant/post</span><b id="mMount">—</b></div>
+<div class="metric"><span>Altezza min</span><b id="mMin">—</b></div>
+<div class="metric"><span>Tempo</span><b id="mTime">—</b></div>
+<div class="metric"><span>Peso</span><b id="mWeight">—</b></div>
+</div>
+
+<div class="layout">
+<aside class="panel">
+<h2>1. Seleziona</h2>
+<label>Ponte sollevatore</label><select id="liftSelect" onchange="run()"></select>
+<label>Veicolo/template</label><select id="vehicleSelect" onchange="run()"></select>
+
+<div class="card">
+<h3>2. Sposta il veicolo</h3>
+<label>Posizione avanti/indietro: <b id="posLabel">0 mm</b></label>
+<div class="range"><span>-800</span><input id="vehicleOffset" type="range" min="-800" max="800" step="10" value="0" oninput="run()"><span>+800</span></div>
+<button onclick="findBest()">Trova posizione valida</button>
+<button class="secondary" onclick="vehicleOffset.value=0;run()">Centra veicolo</button>
+</div>
+
+<div id="result"></div>
+<button class="secondary" onclick="window.print()">Stampa / PDF</button>
+</aside>
+
+<main class="panel">
+<h2>3. Schema operativo</h2>
+<div class="svgbox" id="drawing"></div>
+<div class="card">
+<b>Legenda:</b>
+<span class="badge info">blu = braccio a sfilo MIN</span>
+<span class="badge ok">verde = braccio a sfilo MAX</span>
+<span class="badge warn">giallo = punto presa richiesto</span>
+<span class="badge bad">rosso = fuori range</span>
+<span class="badge warn">quota gialla verticale = distanza reale attacchi bracci stessa colonna</span>
+</div>
+<div class="card">
+<h3>Logica calcolo</h3>
+<pre id="logic"></pre>
+</div>
+</main>
+</div>
+</div>
+
+<script>
+const DB = {"lifts": [{"id": "AL40", "code": "AL 40", "capacityKg": 4000, "internalColumnDistanceMm": 2536, "armMountDistanceMm": 430, "armMountDistanceSource": "Quota letta dallo schema AL 40: distanza tra attacco braccio anteriore e attacco braccio posteriore sulla stessa colonna.", "minPadHeightMm": 105, "maxLiftHeightMm": 1988, "overallHeightMm": 2818, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 2.2, "liftingTimeSec": "40-60", "workingPressureBar": 190, "netWeightKg": 665, "frontArm": {"minMm": 730, "maxMm": 1095}, "rearArm": {"minMm": 870, "maxMm": 1375}, "source": "AL 40 depliant/listino: quota attacchi 430 mm, bracci 730-1095 / 870-1375 mm."}, {"id": "ALB40", "code": "ALB 40", "capacityKg": 4000, "internalColumnDistanceMm": 2760, "armMountDistanceMm": 1200, "armMountDistanceSource": "Quota da schema ALB 40, da verificare sul disegno tecnico ufficiale.", "minPadHeightMm": 100, "maxLiftHeightMm": 1800, "overallHeightMm": 2878, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 2.2, "liftingTimeSec": "40-60", "workingPressureBar": 190, "netWeightKg": 790, "frontArm": {"minMm": 700, "maxMm": 1130}, "rearArm": {"minMm": 700, "maxMm": 1130}, "source": "ALB 40 depliant rev 02_26.pdf"}, {"id": "AL55", "code": "AL 55", "capacityKg": 5500, "internalColumnDistanceMm": 3125, "armMountDistanceMm": 650, "armMountDistanceSource": "Quota indicativa da schema AL 55, da verificare sul disegno tecnico ufficiale.", "minPadHeightMm": 115, "maxLiftHeightMm": 2050, "overallHeightMm": 4050, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 3, "liftingTimeSec": "50", "workingPressureBar": null, "netWeightKg": 1068, "frontArm": {"minMm": 810, "maxMm": 1266}, "rearArm": {"minMm": 910, "maxMm": 1728}, "source": "AL 55 depliant rev 02_26.pdf"}], "vehicles": [{"id": "CITY", "name": "Template city car A/B", "weightKg": 1200, "lengthMm": 3900, "widthMm": 1700, "liftPoints": {"frontLeft": {"x": -650, "y": -850}, "frontRight": {"x": 650, "y": -850}, "rearLeft": {"x": -650, "y": 850}, "rearRight": {"x": 650, "y": 850}}}, {"id": "COMPACT", "name": "Template compatta segmento C", "weightKg": 1550, "lengthMm": 4400, "widthMm": 1800, "liftPoints": {"frontLeft": {"x": -700, "y": -950}, "frontRight": {"x": 700, "y": -950}, "rearLeft": {"x": -700, "y": 950}, "rearRight": {"x": 700, "y": 950}}}, {"id": "SUV", "name": "Template SUV medio", "weightKg": 2200, "lengthMm": 4700, "widthMm": 1950, "liftPoints": {"frontLeft": {"x": -780, "y": -1080}, "frontRight": {"x": 780, "y": -1080}, "rearLeft": {"x": -780, "y": 1080}, "rearRight": {"x": 780, "y": 1080}}}, {"id": "VAN", "name": "Template furgone medio", "weightKg": 3300, "lengthMm": 5400, "widthMm": 2050, "liftPoints": {"frontLeft": {"x": -870, "y": -1300}, "frontRight": {"x": 870, "y": -1300}, "rearLeft": {"x": -870, "y": 1350}, "rearRight": {"x": 870, "y": 1350}}}]};
+
+function init(){
+ liftSelect.innerHTML = DB.lifts.map(l=>`<option value="${l.id}">${l.code} - ${l.capacityKg} kg - interno ${l.internalColumnDistanceMm} mm</option>`).join("");
+ vehicleSelect.innerHTML = DB.vehicles.map(v=>`<option value="${v.id}">${v.name} - ${v.weightKg} kg</option>`).join("");
+ run();
+}
+function lift(){return DB.lifts.find(x=>x.id===liftSelect.value)}
+function veh(){return DB.vehicles.find(x=>x.id===vehicleSelect.value)}
+function d(x1,y1,x2,y2){return Math.hypot(x2-x1,y2-y1)}
+
+function getPivots(l){
+ const half = l.internalColumnDistanceMm/2;
+ const inset = 90;
+ const mount = l.armMountDistanceMm || 430;
+ const frontY = -mount/2;
+ const rearY = mount/2;
+ return {
+   frontLeft:{x:-half+inset,y:frontY,arm:l.frontArm,label:"Ant SX"},
+   frontRight:{x:half-inset,y:frontY,arm:l.frontArm,label:"Ant DX"},
+   rearLeft:{x:-half+inset,y:rearY,arm:l.rearArm,label:"Post SX"},
+   rearRight:{x:half-inset,y:rearY,arm:l.rearArm,label:"Post DX"}
+ };
+}
+function calc(l,v,offset){
+ const piv=getPivots(l);
+ return Object.keys(piv).map(k=>{
+   const p=piv[k];
+   const target={x:v.liftPoints[k].x,y:v.liftPoints[k].y+offset};
+   const req=d(p.x,p.y,target.x,target.y);
+   const ux=(target.x-p.x)/req, uy=(target.y-p.y)/req;
+   return {
+     key:k,label:p.label,pivot:p,target,arm:p.arm,
+     required:Math.round(req),ok:req>=p.arm.minMm&&req<=p.arm.maxMm,
+     minPoint:{x:p.x+ux*p.arm.minMm,y:p.y+uy*p.arm.minMm},
+     maxPoint:{x:p.x+ux*p.arm.maxMm,y:p.y+uy*p.arm.maxMm}
+   }
+ });
+}
+function run(){
+ const l=lift(),v=veh(),offset=+vehicleOffset.value;
+ posLabel.textContent = offset+" mm";
+ mLift.textContent=l.code;mCap.textContent=l.capacityKg+" kg";mInternal.textContent=l.internalColumnDistanceMm+" mm";mMount.textContent=(l.armMountDistanceMm)+" mm";mMin.textContent=l.minPadHeightMm+" mm";mTime.textContent=l.liftingTimeSec+" sec";mWeight.textContent=l.netWeightKg+" kg";
+ const c=calc(l,v,offset);
+ const capOk=v.weightKg<=l.capacityKg;
+ const okAll=capOk&&c.every(x=>x.ok);
+ result.innerHTML=`<div class="card"><h3>${okAll?"POSIZIONE VALIDA":"POSIZIONE NON VALIDA"}</h3>
+ <span class="badge ${capOk?'ok':'bad'}">Portata ${capOk?'OK':'NO'} ${v.weightKg}/${l.capacityKg} kg</span>
+ <span class="badge warn">Verifica fisica obbligatoria</span>
+ <div class="measureBox">Distanza reale attacco braccio anteriore ↔ attacco braccio posteriore sulla stessa colonna<br><b>${l.armMountDistanceMm} mm</b><br><small>${l.armMountDistanceSource}</small></div>
+ <table class="table"><tr><th>Braccio</th><th>MIN</th><th>Richiesto</th><th>MAX</th><th>Stato</th></tr>
+ ${c.map(x=>`<tr><td>${x.label}</td><td>${x.arm.minMm}</td><td>${x.required}</td><td>${x.arm.maxMm}</td><td>${x.ok?'✅':'❌'}</td></tr>`).join("")}
+ </table></div>`;
+ logic.textContent=JSON.stringify({
+   ponte:l.code,
+   distanzaRealeAttaccoBraccioAnteriorePosterioreStessaColonnaMm:l.armMountDistanceMm,
+   fonteQuota:l.armMountDistanceSource,
+   offsetVeicoloMm:offset,
+   formula:"richiesto = distanza tra perno braccio e punto presa veicolo spostato",
+   verifica:"MIN <= richiesto <= MAX",
+   risultati:c.map(x=>({braccio:x.label,min:x.arm.minMm,richiesto:x.required,max:x.arm.maxMm,ok:x.ok}))
+ },null,2);
+ draw(l,v,c,offset,okAll);
+}
+function findBest(){
+ for(let o=-800;o<=800;o+=10){
+   const l=lift(),v=veh();
+   const c=calc(l,v,o);
+   if(v.weightKg<=l.capacityKg && c.every(x=>x.ok)){vehicleOffset.value=o;run();return;}
+ }
+ alert("Nessuna posizione valida trovata nel range -800 / +800 mm.");
+}
+function mountDistanceLines(l,sx,sy){
+ const piv=getPivots(l);
+ const yF=sy(piv.frontLeft.y), yR=sy(piv.rearLeft.y);
+ const leftX=sx(piv.frontLeft.x)-46, rightX=sx(piv.frontRight.x)+46;
+ const d=l.armMountDistanceMm;
+ return `
+ <line x1="${leftX}" y1="${yF}" x2="${leftX}" y2="${yR}" stroke="#facc15" stroke-width="3"/>
+ <line x1="${leftX-12}" y1="${yF}" x2="${leftX+12}" y2="${yF}" stroke="#facc15" stroke-width="3"/>
+ <line x1="${leftX-12}" y1="${yR}" x2="${leftX+12}" y2="${yR}" stroke="#facc15" stroke-width="3"/>
+ <text x="${leftX-122}" y="${(yF+yR)/2-8}" fill="#facc15" font-size="13">ATTACCHI BRACCI</text>
+ <text x="${leftX-82}" y="${(yF+yR)/2+12}" fill="#facc15" font-size="17" font-weight="700">${d} mm</text>
+ <line x1="${rightX}" y1="${yF}" x2="${rightX}" y2="${yR}" stroke="#facc15" stroke-width="3"/>
+ <line x1="${rightX-12}" y1="${yF}" x2="${rightX+12}" y2="${yF}" stroke="#facc15" stroke-width="3"/>
+ <line x1="${rightX-12}" y1="${yR}" x2="${rightX+12}" y2="${yR}" stroke="#facc15" stroke-width="3"/>
+ <text x="${rightX+18}" y="${(yF+yR)/2-8}" fill="#facc15" font-size="13">ATTACCHI BRACCI</text>
+ <text x="${rightX+55}" y="${(yF+yR)/2+12}" fill="#facc15" font-size="17" font-weight="700">${d} mm</text>`;
+}
+function draw(l,v,c,offset,okAll){
+ const W=1200,H=760,s=.16,cx=W/2,cy=H/2;
+ const sx=x=>cx+x*s, sy=y=>cy+y*s;
+ const half=l.internalColumnDistanceMm/2;
+ const colL=sx(-half), colR=sx(half);
+ const carW=v.widthMm*s, carL=v.lengthMm*s, carX=cx-carW/2, carY=cy-carL/2+offset*s;
+ const arms=c.map(a=>{
+   const px=sx(a.pivot.x),py=sy(a.pivot.y),minx=sx(a.minPoint.x),miny=sy(a.minPoint.y),maxx=sx(a.maxPoint.x),maxy=sy(a.maxPoint.y),tx=sx(a.target.x),ty=sy(a.target.y);
+   const main=a.ok?'#facc15':'#ef4444';
+   return `
+   <line x1="${px}" y1="${py}" x2="${maxx}" y2="${maxy}" stroke="#475569" stroke-width="18" stroke-linecap="round"/>
+   <line x1="${px}" y1="${py}" x2="${minx}" y2="${miny}" stroke="#38bdf8" stroke-width="12" stroke-linecap="round"/>
+   <line x1="${minx}" y1="${miny}" x2="${maxx}" y2="${maxy}" stroke="#22c55e" stroke-width="8" stroke-linecap="round"/>
+   <line x1="${px}" y1="${py}" x2="${tx}" y2="${ty}" stroke="${main}" stroke-width="3" stroke-dasharray="6 5"/>
+   <circle cx="${px}" cy="${py}" r="8" fill="#e5e7eb"/>
+   <circle cx="${minx}" cy="${miny}" r="10" fill="#38bdf8"/>
+   <circle cx="${maxx}" cy="${maxy}" r="10" fill="#22c55e"/>
+   <circle cx="${tx}" cy="${ty}" r="9" fill="${main}" stroke="#fff" stroke-width="2"/>
+   <text x="${tx+10}" y="${ty-8}" fill="${main}" font-size="13">${a.label} ${a.required}mm</text>`;
+ }).join("");
+ drawing.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="auto">
+ <rect width="${W}" height="${H}" fill="#030712"/>
+ <text x="24" y="35" fill="#facc15" font-size="20" font-weight="800">${l.code} / ${v.name}</text>
+ <text x="24" y="58" fill="#cbd5e1" font-size="13">Quota gialla verticale = distanza attacco braccio anteriore/posteriore sulla stessa colonna.</text>
+ <line x1="${colL}" y1="95" x2="${colL}" y2="${H-110}" stroke="#9ca3af" stroke-width="12"/>
+ <line x1="${colR}" y1="95" x2="${colR}" y2="${H-110}" stroke="#9ca3af" stroke-width="12"/>
+ <text x="${colL-45}" y="86" fill="#cbd5e1" font-size="13">Colonna SX</text>
+ <text x="${colR-45}" y="86" fill="#cbd5e1" font-size="13">Colonna DX</text>
+ <rect x="${carX}" y="${carY}" width="${carW}" height="${carL}" rx="44" fill="#1e293b" stroke="${okAll?'#22c55e':'#38bdf8'}" stroke-width="3" opacity=".92"/>
+ <line x1="${cx}" y1="${carY+10}" x2="${cx}" y2="${carY+carL-10}" stroke="#38bdf8" stroke-dasharray="8 6"/>
+ <text x="${cx-50}" y="${carY+35}" fill="#bae6fd" font-size="14">VEICOLO</text>
+ ${arms}
+ ${mountDistanceLines(l,sx,sy)}
+ <line x1="${colL}" y1="${H-70}" x2="${colR}" y2="${H-70}" stroke="#cbd5e1" stroke-width="2"/>
+ <text x="${cx-88}" y="${H-80}" fill="#f8fafc" font-size="16">INTERNO COLONNE</text>
+ <text x="${cx-38}" y="${H-50}" fill="#f8fafc" font-size="16">${l.internalColumnDistanceMm} mm</text>
+ </svg>`;
+}
+init();
+</script>
+</body>
+</html>
