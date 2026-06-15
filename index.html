@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LiftPointDB v13</title>
+<title>LiftPointDB v15</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{--bg:#07111f;--panel:#101827;--card:#172235;--line:#334155;--text:#f8fafc;--muted:#94a3b8;--yellow:#facc15;--green:#22c55e;--blue:#38bdf8;--red:#ef4444;--orange:#fb923c}
 *{box-sizing:border-box}body{margin:0;background:#07111f;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 header{padding:16px 20px;background:#050914;border-bottom:1px solid var(--line)}h1{margin:0;font-size:26px}small{color:var(--muted)}
-.wrap{max-width:1480px;margin:auto;padding:14px}.layout{display:grid;grid-template-columns:420px 1fr;gap:12px}@media(max-width:980px){.layout{grid-template-columns:1fr}}
+.wrap{max-width:1480px;margin:auto;padding:14px}.layout{display:grid;grid-template-columns:430px 1fr;gap:12px}@media(max-width:980px){.layout{grid-template-columns:1fr}}
 .panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}.card{background:var(--card);margin-top:10px}
 label{display:block;color:var(--muted);font-size:13px;margin:10px 0 5px}select,input,button{width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:#050914;color:var(--text);font-size:15px}
 button{background:var(--yellow);color:#111827;font-weight:800;margin-top:10px;cursor:pointer}.secondary{background:#334155;color:white}.danger{background:#7f1d1d;color:white}
@@ -23,9 +23,9 @@ pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:1
 </style>
 </head>
 <body>
-<header><h1>LiftPointDB v13</h1><small>Valori aggiornati da manuali: AL40/ALB40 attacchi bracci 430 mm; AL55 aggiornato da manuale.</small></header>
+<header><h1>LiftPointDB v15</h1><small>AL55 con configurazioni diverse: Simmetrica e Asimmetrica.</small></header>
 <div class="wrap">
-<div class="notice"><b>Disclaimer:</b> i dati ponte derivano dai manuali/depliant caricati; i veicoli sono template. Per uso reale verificare sempre manuale del costruttore veicolo, manuale del ponte, baricentro e stabilità dopo i primi 200 mm di sollevamento.</div>
+<div class="notice"><b>Novità v15:</b> per AL55 è stato aggiunto il menu <b>Configurazione</b>. Selezionando <b>Simmetrica</b> o <b>Asimmetrica</b> cambiano la posizione dei perni bracci e la geometria del simulatore.</div>
 
 <div class="tabs">
 <button class="tab active" onclick="showTab('sim',this)">Simulatore</button>
@@ -39,7 +39,7 @@ pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:1
 <div class="metric"><span>Portata</span><b id="mCap">—</b></div>
 <div class="metric"><span>Interno colonne</span><b id="mInternal">—</b></div>
 <div class="metric"><span>Attacchi ant/post</span><b id="mMount">—</b></div>
-<div class="metric"><span>Altezza min</span><b id="mMin">—</b></div>
+<div class="metric"><span>Configurazione</span><b id="mConfig">—</b></div>
 <div class="metric"><span>Tempo</span><b id="mTime">—</b></div>
 <div class="metric"><span>Peso</span><b id="mWeight">—</b></div>
 </div>
@@ -47,7 +47,8 @@ pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:1
 <div class="layout">
 <aside class="panel">
 <h2>1. Seleziona</h2>
-<label>Ponte sollevatore</label><select id="liftSelect" onchange="run()"></select>
+<label>Ponte sollevatore</label><select id="liftSelect" onchange="onLiftChange()"></select>
+<label>Configurazione ponte</label><select id="configSelect" onchange="onConfigChange()"></select>
 <label>Veicolo/template</label><select id="vehicleSelect" onchange="run()"></select>
 
 <div class="card">
@@ -55,6 +56,7 @@ pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:1
 <label>Posizione avanti/indietro: <b id="posLabel">0 mm</b></label>
 <div class="range"><span>-1000</span><input id="vehicleOffset" type="range" min="-1000" max="1000" step="10" value="0" oninput="run()"><span>+1000</span></div>
 <button onclick="findBest()">Trova posizione valida</button>
+<button class="secondary" onclick="applyConfigPreset()">Usa preset configurazione</button>
 <button class="secondary" onclick="vehicleOffset.value=0;run()">Centra veicolo</button>
 </div>
 
@@ -86,7 +88,7 @@ pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:1
 </div>
 
 <script>
-const DB = {"lifts": [{"id": "AL40", "code": "AL 40", "capacityKg": 4000, "internalColumnDistanceMm": 2800, "armMountDistanceMm": 430, "armMountDistanceSource": "Manuale AL40/ALB40 rev. 01_2026, tavola dimensioni pag. 9: quota 430 mm tra attacco braccio anteriore e posteriore sulla stessa colonna.", "pinCrossDistanceMm": 2625, "columnOffsetMm": 350, "minPadHeightMm": 98, "maxLiftHeightMm": 1900, "overallHeightMm": 2818, "powerSupply": "380V/3ph/50Hz standard; 220V/1ph/50Hz su richiesta", "motorKw": 2.2, "liftingTimeSec": 50, "loweringTimeSec": 50, "workingPressureBar": 230, "netWeightKg": 680, "frontArm": {"minMm": 730, "maxMm": 1095}, "rearArm": {"minMm": 870, "maxMm": 1375}, "source": "AL 40 IT rev. 01 01_2026.pdf"}, {"id": "ALB40", "code": "ALB 40", "capacityKg": 4000, "internalColumnDistanceMm": 2760, "armMountDistanceMm": 430, "armMountDistanceSource": "Manuale/depliant ALB40: quota 430 mm tra attacco braccio anteriore e posteriore. La quota 1200 mm è riferita alla pedana/basamento e non agli attacchi bracci.", "pinCrossDistanceMm": 3384, "columnOffsetMm": 350, "minPadHeightMm": 100, "maxLiftHeightMm": 1800, "overallHeightMm": 2878, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 2.2, "liftingTimeSec": "40-60", "loweringTimeSec": "40-60", "workingPressureBar": 190, "netWeightKg": 790, "frontArm": {"minMm": 700, "maxMm": 1130}, "rearArm": {"minMm": 700, "maxMm": 1130}, "source": "ALB 40 depliant rev 02_26.pdf"}, {"id": "AL55", "code": "AL 55", "capacityKg": 5500, "internalColumnDistanceMm": 3285, "armMountDistanceMm": 430, "armMountDistanceSource": "Manuale AL55 rev.1_01/2026, layout pag. 10/11: quota attacchi bracci impostata a 430 mm nella logica come distanza tra perno anteriore e posteriore sulla stessa colonna.", "pinCrossDistanceMm": 3285, "columnOffsetMm": 0, "minPadHeightMm": 115, "maxLiftHeightMm": 2062, "overallHeightMm": 4050, "overallHeightOptionsMm": [4050, 4650, 5250], "powerSupply": "400V/3ph/50Hz standard; 230/400V 50/60Hz", "motorKw": 3, "liftingTimeSec": 50, "workingPressureBar": 230, "netWeightKg": 1200, "frontArm": {"minMm": 910, "maxMm": 1718}, "rearArm": {"minMm": 910, "maxMm": 1718}, "source": "AL 55 IT_FR_EN_DE_ES rev1 01_26 low.pdf"}], "vehicles": [{"id": "CITY", "name": "Template city car A/B", "weightKg": 1200, "lengthMm": 3900, "widthMm": 1700, "liftPoints": {"frontLeft": {"x": -650, "y": -850}, "frontRight": {"x": 650, "y": -850}, "rearLeft": {"x": -650, "y": 850}, "rearRight": {"x": 650, "y": 850}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "COMPACT", "name": "Template compatta segmento C", "weightKg": 1550, "lengthMm": 4400, "widthMm": 1800, "liftPoints": {"frontLeft": {"x": -700, "y": -950}, "frontRight": {"x": 700, "y": -950}, "rearLeft": {"x": -700, "y": 950}, "rearRight": {"x": 700, "y": 950}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "SUV", "name": "Template SUV medio", "weightKg": 2200, "lengthMm": 4700, "widthMm": 1950, "liftPoints": {"frontLeft": {"x": -780, "y": -1080}, "frontRight": {"x": 780, "y": -1080}, "rearLeft": {"x": -780, "y": 1080}, "rearRight": {"x": 780, "y": 1080}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "VAN", "name": "Template furgone medio", "weightKg": 3300, "lengthMm": 5400, "widthMm": 2050, "liftPoints": {"frontLeft": {"x": -870, "y": -1300}, "frontRight": {"x": 870, "y": -1300}, "rearLeft": {"x": -870, "y": 1350}, "rearRight": {"x": 870, "y": 1350}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}]};
+const DB = {"lifts": [{"id": "AL40", "code": "AL 40", "capacityKg": 4000, "internalColumnDistanceMm": 2800, "armMountDistanceMm": 430, "columnOffsetMm": 350, "minPadHeightMm": 98, "maxLiftHeightMm": 1900, "overallHeightMm": 2818, "powerSupply": "380V/3ph/50Hz standard; 220V/1ph/50Hz su richiesta", "motorKw": 2.2, "liftingTimeSec": 50, "workingPressureBar": 230, "netWeightKg": 680, "frontArm": {"minMm": 730, "maxMm": 1095}, "rearArm": {"minMm": 870, "maxMm": 1375}, "source": "AL 40 IT rev. 01 01_2026.pdf", "configurations": [{"id": "standard", "name": "Standard", "description": "Configurazione standard AL40/ALB40.", "frontPivotYmm": -215, "rearPivotYmm": 215, "frontArm": {"minMm": 730, "maxMm": 1095}, "rearArm": {"minMm": 870, "maxMm": 1375}}]}, {"id": "ALB40", "code": "ALB 40", "capacityKg": 4000, "internalColumnDistanceMm": 2760, "armMountDistanceMm": 430, "columnOffsetMm": 350, "minPadHeightMm": 100, "maxLiftHeightMm": 1800, "overallHeightMm": 2878, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 2.2, "liftingTimeSec": "40-60", "workingPressureBar": 190, "netWeightKg": 790, "frontArm": {"minMm": 700, "maxMm": 1130}, "rearArm": {"minMm": 700, "maxMm": 1130}, "source": "ALB 40 depliant rev 02_26.pdf", "configurations": [{"id": "standard", "name": "Standard", "description": "Configurazione standard ALB40 con pedana portante.", "frontPivotYmm": -215, "rearPivotYmm": 215, "frontArm": {"minMm": 700, "maxMm": 1130}, "rearArm": {"minMm": 700, "maxMm": 1130}}]}, {"id": "AL55", "code": "AL 55", "capacityKg": 5500, "internalColumnDistanceMm": 3285, "armMountDistanceMm": 430, "columnOffsetMm": 0, "minPadHeightMm": 115, "maxLiftHeightMm": 2062, "overallHeightMm": 4050, "overallHeightOptionsMm": [4050, 4650, 5250], "powerSupply": "400V/3ph/50Hz standard; 230/400V 50/60Hz", "motorKw": 3, "liftingTimeSec": 50, "workingPressureBar": 230, "netWeightKg": 1200, "source": "AL 55 IT_FR_EN_DE_ES rev1 01_26 low.pdf", "configurations": [{"id": "symmetric", "name": "Simmetrica", "description": "Layout installazione simmetrica AL55: i perni bracci sono allineati in modo simmetrico rispetto all'asse del ponte.", "frontPivotYmm": -215, "rearPivotYmm": 215, "frontArm": {"minMm": 910, "maxMm": 1718}, "rearArm": {"minMm": 910, "maxMm": 1718}, "vehicleShiftPresetMm": 0}, {"id": "asymmetric", "name": "Asimmetrica", "description": "Layout installazione asimmetrica AL55: geometria sfalsata per facilitare apertura portiere e accesso al veicolo.", "frontPivotYmm": -320, "rearPivotYmm": 110, "frontArm": {"minMm": 910, "maxMm": 1718}, "rearArm": {"minMm": 910, "maxMm": 1718}, "vehicleShiftPresetMm": 180}]}], "vehicles": [{"id": "CITY", "name": "Template city car A/B", "weightKg": 1200, "lengthMm": 3900, "widthMm": 1700, "liftPoints": {"frontLeft": {"x": -650, "y": -850}, "frontRight": {"x": 650, "y": -850}, "rearLeft": {"x": -650, "y": 850}, "rearRight": {"x": 650, "y": 850}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "COMPACT", "name": "Template compatta segmento C", "weightKg": 1550, "lengthMm": 4400, "widthMm": 1800, "liftPoints": {"frontLeft": {"x": -700, "y": -950}, "frontRight": {"x": 700, "y": -950}, "rearLeft": {"x": -700, "y": 950}, "rearRight": {"x": 700, "y": 950}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "SUV", "name": "Template SUV medio", "weightKg": 2200, "lengthMm": 4700, "widthMm": 1950, "liftPoints": {"frontLeft": {"x": -780, "y": -1080}, "frontRight": {"x": 780, "y": -1080}, "rearLeft": {"x": -780, "y": 1080}, "rearRight": {"x": 780, "y": 1080}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "VAN", "name": "Template furgone medio", "weightKg": 3300, "lengthMm": 5400, "widthMm": 2050, "liftPoints": {"frontLeft": {"x": -870, "y": -1300}, "frontRight": {"x": 870, "y": -1300}, "rearLeft": {"x": -870, "y": 1350}, "rearRight": {"x": 870, "y": 1350}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}]};
 
 function showTab(id,btn){
  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
@@ -99,27 +101,42 @@ function showTab(id,btn){
 function init(){
  liftSelect.innerHTML = DB.lifts.map(l=>`<option value="${l.id}">${l.code} - ${l.capacityKg} kg - interno ${l.internalColumnDistanceMm} mm</option>`).join("");
  vehicleSelect.innerHTML = DB.vehicles.map(v=>`<option value="${v.id}">${v.name} - ${v.weightKg} kg</option>`).join("");
- run();
+ onLiftChange();
 }
 function lift(){return DB.lifts.find(x=>x.id===liftSelect.value)}
+function config(){
+ const l=lift();
+ return l.configurations.find(c=>c.id===configSelect.value) || l.configurations[0];
+}
 function veh(){return DB.vehicles.find(x=>x.id===vehicleSelect.value)}
 function d(x1,y1,x2,y2){return Math.hypot(x2-x1,y2-y1)}
 
-function getPivots(l){
+function onLiftChange(){
+ const l=lift();
+ configSelect.innerHTML = l.configurations.map(c=>`<option value="${c.id}">${c.name}</option>`).join("");
+ applyConfigPreset();
+}
+function onConfigChange(){applyConfigPreset();}
+function applyConfigPreset(){
+ const c=config();
+ vehicleOffset.value = c.vehicleShiftPresetMm || 0;
+ run();
+}
+
+function getPivots(l,cfg){
  const half = l.internalColumnDistanceMm/2;
  const inset = l.columnOffsetMm || 90;
- const mount = l.armMountDistanceMm;
- const frontY = -mount/2;
- const rearY = mount/2;
+ const frontY = cfg.frontPivotYmm;
+ const rearY = cfg.rearPivotYmm;
  return {
-   frontLeft:{x:-half+inset,y:frontY,arm:l.frontArm,label:"Ant SX"},
-   frontRight:{x:half-inset,y:frontY,arm:l.frontArm,label:"Ant DX"},
-   rearLeft:{x:-half+inset,y:rearY,arm:l.rearArm,label:"Post SX"},
-   rearRight:{x:half-inset,y:rearY,arm:l.rearArm,label:"Post DX"}
+   frontLeft:{x:-half+inset,y:frontY,arm:cfg.frontArm,label:"Ant SX"},
+   frontRight:{x:half-inset,y:frontY,arm:cfg.frontArm,label:"Ant DX"},
+   rearLeft:{x:-half+inset,y:rearY,arm:cfg.rearArm,label:"Post SX"},
+   rearRight:{x:half-inset,y:rearY,arm:cfg.rearArm,label:"Post DX"}
  };
 }
-function calc(l,v,offset){
- const piv=getPivots(l);
+function calc(l,cfg,v,offset){
+ const piv=getPivots(l,cfg);
  return Object.keys(piv).map(k=>{
    const p=piv[k];
    const target={x:v.liftPoints[k].x,y:v.liftPoints[k].y+offset};
@@ -134,55 +151,59 @@ function calc(l,v,offset){
  });
 }
 function run(){
- const l=lift(),v=veh(),offset=+vehicleOffset.value;
+ const l=lift(),cfg=config(),v=veh(),offset=+vehicleOffset.value;
  posLabel.textContent = offset+" mm";
- mLift.textContent=l.code;mCap.textContent=l.capacityKg+" kg";mInternal.textContent=l.internalColumnDistanceMm+" mm";mMount.textContent=l.armMountDistanceMm+" mm";mMin.textContent=l.minPadHeightMm+" mm";mTime.textContent=l.liftingTimeSec+" sec";mWeight.textContent=l.netWeightKg+" kg";
- const c=calc(l,v,offset);
+ const mountDistance = Math.abs(cfg.rearPivotYmm - cfg.frontPivotYmm);
+ mLift.textContent=l.code;mCap.textContent=l.capacityKg+" kg";mInternal.textContent=l.internalColumnDistanceMm+" mm";mMount.textContent=mountDistance+" mm";mConfig.textContent=cfg.name;mTime.textContent=l.liftingTimeSec+" sec";mWeight.textContent=l.netWeightKg+" kg";
+ const c=calc(l,cfg,v,offset);
  const capOk=v.weightKg<=l.capacityKg;
  const okAll=capOk&&c.every(x=>x.ok);
  result.innerHTML=`<div class="card"><h3>${okAll?"POSIZIONE VALIDA":"POSIZIONE NON VALIDA"}</h3>
  <span class="badge ${capOk?'ok':'bad'}">Portata ${capOk?'OK':'NO'} ${v.weightKg}/${l.capacityKg} kg</span>
+ <span class="badge info">${cfg.name}</span>
  <span class="badge warn">Verifica fisica obbligatoria</span>
- <div class="measureBox">Distanza reale attacco braccio anteriore ↔ attacco braccio posteriore sulla stessa colonna<br><b>${l.armMountDistanceMm} mm</b><br><small>${l.armMountDistanceSource}</small></div>
+ <div class="measureBox">Distanza attacco braccio anteriore ↔ attacco braccio posteriore sulla stessa colonna<br><b>${mountDistance} mm</b><br><small>${cfg.description}</small></div>
  <table class="table"><tr><th>Braccio</th><th>MIN</th><th>Richiesto</th><th>MAX</th><th>Stato</th></tr>
  ${c.map(x=>`<tr><td>${x.label}</td><td>${x.arm.minMm}</td><td>${x.required}</td><td>${x.arm.maxMm}</td><td>${x.ok?'✅':'❌'}</td></tr>`).join("")}
  </table></div>`;
  logic.textContent=JSON.stringify({
    ponte:l.code,
-   distanzaAttacchiStessaColonnaMm:l.armMountDistanceMm,
+   configurazione:cfg.name,
+   distanzaAttacchiStessaColonnaMm:mountDistance,
+   pivotAnterioreYmm:cfg.frontPivotYmm,
+   pivotPosterioreYmm:cfg.rearPivotYmm,
    offsetVeicoloMm:offset,
    formula:"richiesto = distanza tra perno braccio e punto presa veicolo spostato",
    verifica:"MIN <= richiesto <= MAX",
    risultati:c.map(x=>({braccio:x.label,min:x.arm.minMm,richiesto:x.required,max:x.arm.maxMm,ok:x.ok}))
  },null,2);
- draw(l,v,c,offset,okAll);
+ draw(l,cfg,v,c,offset,okAll,mountDistance);
 }
 function findBest(){
+ const l=lift(),cfg=config(),v=veh();
  for(let o=-1000;o<=1000;o+=10){
-   const l=lift(),v=veh();
-   const c=calc(l,v,o);
+   const c=calc(l,cfg,v,o);
    if(v.weightKg<=l.capacityKg && c.every(x=>x.ok)){vehicleOffset.value=o;run();return;}
  }
  alert("Nessuna posizione valida trovata nel range -1000 / +1000 mm.");
 }
-function mountDistanceLines(l,sx,sy){
- const piv=getPivots(l);
+function mountDistanceLines(l,cfg,sx,sy,mountDistance){
+ const piv=getPivots(l,cfg);
  const yF=sy(piv.frontLeft.y), yR=sy(piv.rearLeft.y);
  const leftX=sx(piv.frontLeft.x)-46, rightX=sx(piv.frontRight.x)+46;
- const d=l.armMountDistanceMm;
  return `
  <line x1="${leftX}" y1="${yF}" x2="${leftX}" y2="${yR}" stroke="#facc15" stroke-width="3"/>
  <line x1="${leftX-12}" y1="${yF}" x2="${leftX+12}" y2="${yF}" stroke="#facc15" stroke-width="3"/>
  <line x1="${leftX-12}" y1="${yR}" x2="${leftX+12}" y2="${yR}" stroke="#facc15" stroke-width="3"/>
  <text x="${leftX-122}" y="${(yF+yR)/2-8}" fill="#facc15" font-size="13">ATTACCHI BRACCI</text>
- <text x="${leftX-82}" y="${(yF+yR)/2+12}" fill="#facc15" font-size="17" font-weight="700">${d} mm</text>
+ <text x="${leftX-82}" y="${(yF+yR)/2+12}" fill="#facc15" font-size="17" font-weight="700">${mountDistance} mm</text>
  <line x1="${rightX}" y1="${yF}" x2="${rightX}" y2="${yR}" stroke="#facc15" stroke-width="3"/>
  <line x1="${rightX-12}" y1="${yF}" x2="${rightX+12}" y2="${yF}" stroke="#facc15" stroke-width="3"/>
  <line x1="${rightX-12}" y1="${yR}" x2="${rightX+12}" y2="${yR}" stroke="#facc15" stroke-width="3"/>
  <text x="${rightX+18}" y="${(yF+yR)/2-8}" fill="#facc15" font-size="13">ATTACCHI BRACCI</text>
- <text x="${rightX+55}" y="${(yF+yR)/2+12}" fill="#facc15" font-size="17" font-weight="700">${d} mm</text>`;
+ <text x="${rightX+55}" y="${(yF+yR)/2+12}" fill="#facc15" font-size="17" font-weight="700">${mountDistance} mm</text>`;
 }
-function draw(l,v,c,offset,okAll){
+function draw(l,cfg,v,c,offset,okAll,mountDistance){
  const W=1240,H=760,s=.16,cx=W/2,cy=H/2;
  const sx=x=>cx+x*s, sy=y=>cy+y*s;
  const half=l.internalColumnDistanceMm/2;
@@ -204,8 +225,8 @@ function draw(l,v,c,offset,okAll){
  }).join("");
  drawing.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="auto">
  <rect width="${W}" height="${H}" fill="#030712"/>
- <text x="24" y="35" fill="#facc15" font-size="20" font-weight="800">${l.code} / ${v.name}</text>
- <text x="24" y="58" fill="#cbd5e1" font-size="13">Quota gialla verticale = distanza attacco braccio anteriore/posteriore sulla stessa colonna.</text>
+ <text x="24" y="35" fill="#facc15" font-size="20" font-weight="800">${l.code} / ${cfg.name} / ${v.name}</text>
+ <text x="24" y="58" fill="#cbd5e1" font-size="13">${cfg.description}</text>
  <line x1="${colL}" y1="95" x2="${colL}" y2="${H-110}" stroke="#9ca3af" stroke-width="12"/>
  <line x1="${colR}" y1="95" x2="${colR}" y2="${H-110}" stroke="#9ca3af" stroke-width="12"/>
  <text x="${colL-45}" y="86" fill="#cbd5e1" font-size="13">Colonna SX</text>
@@ -214,7 +235,7 @@ function draw(l,v,c,offset,okAll){
  <line x1="${cx}" y1="${carY+10}" x2="${cx}" y2="${carY+carL-10}" stroke="#38bdf8" stroke-dasharray="8 6"/>
  <text x="${cx-50}" y="${carY+35}" fill="#bae6fd" font-size="14">VEICOLO</text>
  ${arms}
- ${mountDistanceLines(l,sx,sy)}
+ ${mountDistanceLines(l,cfg,sx,sy,mountDistance)}
  <line x1="${colL}" y1="${H-70}" x2="${colR}" y2="${H-70}" stroke="#cbd5e1" stroke-width="2"/>
  <text x="${cx-88}" y="${H-80}" fill="#f8fafc" font-size="16">INTERNO COLONNE</text>
  <text x="${cx-38}" y="${H-50}" fill="#f8fafc" font-size="16">${l.internalColumnDistanceMm} mm</text>
@@ -224,17 +245,19 @@ function renderLiftCards(){
  liftCards.innerHTML = DB.lifts.map(l=>`<div class="card"><h3>${l.code}</h3>
  <table class="table">
  <tr><th>Portata</th><td>${l.capacityKg} kg</td><th>Interno colonne</th><td>${l.internalColumnDistanceMm} mm</td></tr>
- <tr><th>Attacchi bracci stessa colonna</th><td>${l.armMountDistanceMm} mm</td><th>Offset colonna/perno</th><td>${l.columnOffsetMm ?? "n.d."} mm</td></tr>
- <tr><th>Braccio anteriore</th><td>${l.frontArm.minMm}-${l.frontArm.maxMm} mm</td><th>Braccio posteriore</th><td>${l.rearArm.minMm}-${l.rearArm.maxMm} mm</td></tr>
  <tr><th>Altezza min/max</th><td>${l.minPadHeightMm}/${l.maxLiftHeightMm} mm</td><th>Peso</th><td>${l.netWeightKg} kg</td></tr>
- <tr><th>Fonte</th><td colspan="3">${l.source}<br>${l.armMountDistanceSource}</td></tr>
+ <tr><th>Fonte</th><td colspan="3">${l.source}</td></tr>
+ </table>
+ <h4>Configurazioni</h4>
+ <table class="table"><tr><th>Modalità</th><th>Perno ant.</th><th>Perno post.</th><th>Distanza</th><th>Bracci</th></tr>
+ ${l.configurations.map(c=>`<tr><td>${c.name}</td><td>${c.frontPivotYmm} mm</td><td>${c.rearPivotYmm} mm</td><td>${Math.abs(c.rearPivotYmm-c.frontPivotYmm)} mm</td><td>Ant ${c.frontArm.minMm}-${c.frontArm.maxMm}; Post ${c.rearArm.minMm}-${c.rearArm.maxMm}</td></tr>`).join("")}
  </table></div>`).join("");
 }
 function downloadJSON(){
  const blob = new Blob([JSON.stringify(DB,null,2)], {type:"application/json"});
  const a = document.createElement("a");
  a.href = URL.createObjectURL(blob);
- a.download = "liftpointdb-v13.json";
+ a.download = "liftpointdb-v15.json";
  a.click();
 }
 init();
