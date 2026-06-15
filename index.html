@@ -3,28 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LiftPointDB v12</title>
+<title>LiftPointDB v13</title>
+<link rel="manifest" href="manifest.json">
 <style>
 :root{--bg:#07111f;--panel:#101827;--card:#172235;--line:#334155;--text:#f8fafc;--muted:#94a3b8;--yellow:#facc15;--green:#22c55e;--blue:#38bdf8;--red:#ef4444;--orange:#fb923c}
 *{box-sizing:border-box}body{margin:0;background:#07111f;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 header{padding:16px 20px;background:#050914;border-bottom:1px solid var(--line)}h1{margin:0;font-size:26px}small{color:var(--muted)}
-.wrap{max-width:1480px;margin:auto;padding:14px}.layout{display:grid;grid-template-columns:410px 1fr;gap:12px}@media(max-width:950px){.layout{grid-template-columns:1fr}}
+.wrap{max-width:1480px;margin:auto;padding:14px}.layout{display:grid;grid-template-columns:420px 1fr;gap:12px}@media(max-width:980px){.layout{grid-template-columns:1fr}}
 .panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}.card{background:var(--card);margin-top:10px}
 label{display:block;color:var(--muted);font-size:13px;margin:10px 0 5px}select,input,button{width:100%;padding:10px;border-radius:9px;border:1px solid var(--line);background:#050914;color:var(--text);font-size:15px}
-button{background:var(--yellow);color:#111827;font-weight:800;margin-top:10px;cursor:pointer}.secondary{background:#334155;color:white}
-.notice{border-left:5px solid var(--yellow);background:#292524;border-radius:12px;padding:12px;margin-bottom:12px}.table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{border-bottom:1px solid var(--line);padding:7px;text-align:left}
+button{background:var(--yellow);color:#111827;font-weight:800;margin-top:10px;cursor:pointer}.secondary{background:#334155;color:white}.danger{background:#7f1d1d;color:white}
+.notice{border-left:5px solid var(--yellow);background:#292524;border-radius:12px;padding:12px;margin-bottom:12px}.table{width:100%;border-collapse:collapse;font-size:14px}.table th,.table td{border-bottom:1px solid var(--line);padding:7px;text-align:left;vertical-align:top}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;margin:2px}.ok{background:#14532d;color:#bbf7d0}.bad{background:#7f1d1d;color:#fecaca}.warn{background:#713f12;color:#fde68a}.info{background:#0c4a6e;color:#bae6fd}
 .svgbox{border:1px solid var(--line);background:#030712;border-radius:16px;overflow:hidden}.range{display:flex;gap:8px;align-items:center}.range input{accent-color:var(--yellow)}
 .top{display:grid;grid-template-columns:2fr repeat(6,1fr);gap:10px;margin-bottom:12px}.metric{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px}.metric span{font-size:12px;color:var(--muted)}.metric b{display:block;color:var(--yellow);font-size:21px}
 .measureBox{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-top:8px}.measureBox b{color:#facc15;font-size:22px}
 pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:10px;white-space:pre-wrap;max-height:260px;overflow:auto}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab{width:auto;background:#334155;color:white;padding:8px 12px}.tab.active{background:var(--yellow);color:#111827}.hidden{display:none}
 </style>
 </head>
 <body>
-<header><h1>LiftPointDB v12</h1><small>AL 40 e ALB 40 corretti: distanza attacchi braccio anteriore/posteriore sulla stessa colonna = 430 mm.</small></header>
+<header><h1>LiftPointDB v13</h1><small>Valori aggiornati da manuali: AL40/ALB40 attacchi bracci 430 mm; AL55 aggiornato da manuale.</small></header>
 <div class="wrap">
-<div class="notice"><b>Correzione v12:</b> per AL 40 e ALB 40 la distanza tra gli attacchi dei due bracci sulla stessa colonna è stata corretta a <b>430 mm</b>. Su ALB 40 la quota 1200 mm riguarda la pedana portante/basamento, non gli attacchi bracci. Questo valore determina anche la posizione dei perni nel disegno.</div>
+<div class="notice"><b>Disclaimer:</b> i dati ponte derivano dai manuali/depliant caricati; i veicoli sono template. Per uso reale verificare sempre manuale del costruttore veicolo, manuale del ponte, baricentro e stabilità dopo i primi 200 mm di sollevamento.</div>
 
+<div class="tabs">
+<button class="tab active" onclick="showTab('sim',this)">Simulatore</button>
+<button class="tab" onclick="showTab('lifts',this)">Schede ponti</button>
+<button class="tab" onclick="showTab('data',this)">Export JSON</button>
+</div>
+
+<section id="tab-sim">
 <div class="top">
 <div class="metric"><span>Ponte</span><b id="mLift">—</b></div>
 <div class="metric"><span>Portata</span><b id="mCap">—</b></div>
@@ -44,7 +53,7 @@ pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:1
 <div class="card">
 <h3>2. Sposta il veicolo</h3>
 <label>Posizione avanti/indietro: <b id="posLabel">0 mm</b></label>
-<div class="range"><span>-800</span><input id="vehicleOffset" type="range" min="-800" max="800" step="10" value="0" oninput="run()"><span>+800</span></div>
+<div class="range"><span>-1000</span><input id="vehicleOffset" type="range" min="-1000" max="1000" step="10" value="0" oninput="run()"><span>+1000</span></div>
 <button onclick="findBest()">Trova posizione valida</button>
 <button class="secondary" onclick="vehicleOffset.value=0;run()">Centra veicolo</button>
 </div>
@@ -62,7 +71,7 @@ pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:1
 <span class="badge ok">verde = braccio a sfilo MAX</span>
 <span class="badge warn">giallo = punto presa richiesto</span>
 <span class="badge bad">rosso = fuori range</span>
-<span class="badge warn">quota gialla verticale = distanza reale attacchi bracci stessa colonna</span>
+<span class="badge warn">quota gialla verticale = distanza attacchi bracci stessa colonna</span>
 </div>
 <div class="card">
 <h3>Logica calcolo</h3>
@@ -70,11 +79,23 @@ pre{background:#050914;border:1px solid var(--line);border-radius:12px;padding:1
 </div>
 </main>
 </div>
+</section>
+
+<section id="tab-lifts" class="hidden"><div class="panel"><h2>Schede ponti</h2><div id="liftCards"></div></div></section>
+<section id="tab-data" class="hidden"><div class="panel"><h2>Database JSON</h2><button onclick="downloadJSON()">Scarica JSON</button><pre id="jsonOut"></pre></div></section>
 </div>
 
 <script>
-const DB = {"lifts": [{"id": "AL40", "code": "AL 40", "capacityKg": 4000, "internalColumnDistanceMm": 2536, "armMountDistanceMm": 430, "armMountDistanceSource": "Quota letta dallo schema AL 40: distanza tra attacco braccio anteriore e attacco braccio posteriore sulla stessa colonna.", "minPadHeightMm": 105, "maxLiftHeightMm": 1988, "overallHeightMm": 2818, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 2.2, "liftingTimeSec": "40-60", "workingPressureBar": 190, "netWeightKg": 665, "frontArm": {"minMm": 730, "maxMm": 1095}, "rearArm": {"minMm": 870, "maxMm": 1375}, "source": "AL 40 depliant/listino: quota attacchi 430 mm, bracci 730-1095 / 870-1375 mm."}, {"id": "ALB40", "code": "ALB 40", "capacityKg": 4000, "internalColumnDistanceMm": 2760, "armMountDistanceMm": 1200, "armMountDistanceSource": "Quota da schema ALB 40, da verificare sul disegno tecnico ufficiale.", "minPadHeightMm": 100, "maxLiftHeightMm": 1800, "overallHeightMm": 2878, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 2.2, "liftingTimeSec": "40-60", "workingPressureBar": 190, "netWeightKg": 790, "frontArm": {"minMm": 700, "maxMm": 1130}, "rearArm": {"minMm": 700, "maxMm": 1130}, "source": "ALB 40 depliant rev 02_26.pdf"}, {"id": "AL55", "code": "AL 55", "capacityKg": 5500, "internalColumnDistanceMm": 3125, "armMountDistanceMm": 650, "armMountDistanceSource": "Quota indicativa da schema AL 55, da verificare sul disegno tecnico ufficiale.", "minPadHeightMm": 115, "maxLiftHeightMm": 2050, "overallHeightMm": 4050, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 3, "liftingTimeSec": "50", "workingPressureBar": null, "netWeightKg": 1068, "frontArm": {"minMm": 810, "maxMm": 1266}, "rearArm": {"minMm": 910, "maxMm": 1728}, "source": "AL 55 depliant rev 02_26.pdf"}], "vehicles": [{"id": "CITY", "name": "Template city car A/B", "weightKg": 1200, "lengthMm": 3900, "widthMm": 1700, "liftPoints": {"frontLeft": {"x": -650, "y": -850}, "frontRight": {"x": 650, "y": -850}, "rearLeft": {"x": -650, "y": 850}, "rearRight": {"x": 650, "y": 850}}}, {"id": "COMPACT", "name": "Template compatta segmento C", "weightKg": 1550, "lengthMm": 4400, "widthMm": 1800, "liftPoints": {"frontLeft": {"x": -700, "y": -950}, "frontRight": {"x": 700, "y": -950}, "rearLeft": {"x": -700, "y": 950}, "rearRight": {"x": 700, "y": 950}}}, {"id": "SUV", "name": "Template SUV medio", "weightKg": 2200, "lengthMm": 4700, "widthMm": 1950, "liftPoints": {"frontLeft": {"x": -780, "y": -1080}, "frontRight": {"x": 780, "y": -1080}, "rearLeft": {"x": -780, "y": 1080}, "rearRight": {"x": 780, "y": 1080}}}, {"id": "VAN", "name": "Template furgone medio", "weightKg": 3300, "lengthMm": 5400, "widthMm": 2050, "liftPoints": {"frontLeft": {"x": -870, "y": -1300}, "frontRight": {"x": 870, "y": -1300}, "rearLeft": {"x": -870, "y": 1350}, "rearRight": {"x": 870, "y": 1350}}}]};
+const DB = {"lifts": [{"id": "AL40", "code": "AL 40", "capacityKg": 4000, "internalColumnDistanceMm": 2800, "armMountDistanceMm": 430, "armMountDistanceSource": "Manuale AL40/ALB40 rev. 01_2026, tavola dimensioni pag. 9: quota 430 mm tra attacco braccio anteriore e posteriore sulla stessa colonna.", "pinCrossDistanceMm": 2625, "columnOffsetMm": 350, "minPadHeightMm": 98, "maxLiftHeightMm": 1900, "overallHeightMm": 2818, "powerSupply": "380V/3ph/50Hz standard; 220V/1ph/50Hz su richiesta", "motorKw": 2.2, "liftingTimeSec": 50, "loweringTimeSec": 50, "workingPressureBar": 230, "netWeightKg": 680, "frontArm": {"minMm": 730, "maxMm": 1095}, "rearArm": {"minMm": 870, "maxMm": 1375}, "source": "AL 40 IT rev. 01 01_2026.pdf"}, {"id": "ALB40", "code": "ALB 40", "capacityKg": 4000, "internalColumnDistanceMm": 2760, "armMountDistanceMm": 430, "armMountDistanceSource": "Manuale/depliant ALB40: quota 430 mm tra attacco braccio anteriore e posteriore. La quota 1200 mm è riferita alla pedana/basamento e non agli attacchi bracci.", "pinCrossDistanceMm": 3384, "columnOffsetMm": 350, "minPadHeightMm": 100, "maxLiftHeightMm": 1800, "overallHeightMm": 2878, "powerSupply": "400V/3ph/50Hz oppure 230V/1ph/50Hz", "motorKw": 2.2, "liftingTimeSec": "40-60", "loweringTimeSec": "40-60", "workingPressureBar": 190, "netWeightKg": 790, "frontArm": {"minMm": 700, "maxMm": 1130}, "rearArm": {"minMm": 700, "maxMm": 1130}, "source": "ALB 40 depliant rev 02_26.pdf"}, {"id": "AL55", "code": "AL 55", "capacityKg": 5500, "internalColumnDistanceMm": 3285, "armMountDistanceMm": 430, "armMountDistanceSource": "Manuale AL55 rev.1_01/2026, layout pag. 10/11: quota attacchi bracci impostata a 430 mm nella logica come distanza tra perno anteriore e posteriore sulla stessa colonna.", "pinCrossDistanceMm": 3285, "columnOffsetMm": 0, "minPadHeightMm": 115, "maxLiftHeightMm": 2062, "overallHeightMm": 4050, "overallHeightOptionsMm": [4050, 4650, 5250], "powerSupply": "400V/3ph/50Hz standard; 230/400V 50/60Hz", "motorKw": 3, "liftingTimeSec": 50, "workingPressureBar": 230, "netWeightKg": 1200, "frontArm": {"minMm": 910, "maxMm": 1718}, "rearArm": {"minMm": 910, "maxMm": 1718}, "source": "AL 55 IT_FR_EN_DE_ES rev1 01_26 low.pdf"}], "vehicles": [{"id": "CITY", "name": "Template city car A/B", "weightKg": 1200, "lengthMm": 3900, "widthMm": 1700, "liftPoints": {"frontLeft": {"x": -650, "y": -850}, "frontRight": {"x": 650, "y": -850}, "rearLeft": {"x": -650, "y": 850}, "rearRight": {"x": 650, "y": 850}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "COMPACT", "name": "Template compatta segmento C", "weightKg": 1550, "lengthMm": 4400, "widthMm": 1800, "liftPoints": {"frontLeft": {"x": -700, "y": -950}, "frontRight": {"x": 700, "y": -950}, "rearLeft": {"x": -700, "y": 950}, "rearRight": {"x": 700, "y": 950}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "SUV", "name": "Template SUV medio", "weightKg": 2200, "lengthMm": 4700, "widthMm": 1950, "liftPoints": {"frontLeft": {"x": -780, "y": -1080}, "frontRight": {"x": 780, "y": -1080}, "rearLeft": {"x": -780, "y": 1080}, "rearRight": {"x": 780, "y": 1080}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}, {"id": "VAN", "name": "Template furgone medio", "weightKg": 3300, "lengthMm": 5400, "widthMm": 2050, "liftPoints": {"frontLeft": {"x": -870, "y": -1300}, "frontRight": {"x": 870, "y": -1300}, "rearLeft": {"x": -870, "y": 1350}, "rearRight": {"x": 870, "y": 1350}}, "note": "Template geometrico: sostituire con punti presa del costruttore veicolo."}]};
 
+function showTab(id,btn){
+ document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
+ document.getElementById("tab-"+id).classList.remove("hidden");
+ document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");
+ if(id==="lifts") renderLiftCards();
+ if(id==="data") jsonOut.textContent=JSON.stringify(DB,null,2);
+}
 function init(){
  liftSelect.innerHTML = DB.lifts.map(l=>`<option value="${l.id}">${l.code} - ${l.capacityKg} kg - interno ${l.internalColumnDistanceMm} mm</option>`).join("");
  vehicleSelect.innerHTML = DB.vehicles.map(v=>`<option value="${v.id}">${v.name} - ${v.weightKg} kg</option>`).join("");
@@ -86,8 +107,8 @@ function d(x1,y1,x2,y2){return Math.hypot(x2-x1,y2-y1)}
 
 function getPivots(l){
  const half = l.internalColumnDistanceMm/2;
- const inset = 90;
- const mount = l.armMountDistanceMm || 430;
+ const inset = l.columnOffsetMm || 90;
+ const mount = l.armMountDistanceMm;
  const frontY = -mount/2;
  const rearY = mount/2;
  return {
@@ -115,7 +136,7 @@ function calc(l,v,offset){
 function run(){
  const l=lift(),v=veh(),offset=+vehicleOffset.value;
  posLabel.textContent = offset+" mm";
- mLift.textContent=l.code;mCap.textContent=l.capacityKg+" kg";mInternal.textContent=l.internalColumnDistanceMm+" mm";mMount.textContent=(l.armMountDistanceMm)+" mm";mMin.textContent=l.minPadHeightMm+" mm";mTime.textContent=l.liftingTimeSec+" sec";mWeight.textContent=l.netWeightKg+" kg";
+ mLift.textContent=l.code;mCap.textContent=l.capacityKg+" kg";mInternal.textContent=l.internalColumnDistanceMm+" mm";mMount.textContent=l.armMountDistanceMm+" mm";mMin.textContent=l.minPadHeightMm+" mm";mTime.textContent=l.liftingTimeSec+" sec";mWeight.textContent=l.netWeightKg+" kg";
  const c=calc(l,v,offset);
  const capOk=v.weightKg<=l.capacityKg;
  const okAll=capOk&&c.every(x=>x.ok);
@@ -128,8 +149,7 @@ function run(){
  </table></div>`;
  logic.textContent=JSON.stringify({
    ponte:l.code,
-   distanzaRealeAttaccoBraccioAnteriorePosterioreStessaColonnaMm:l.armMountDistanceMm,
-   fonteQuota:l.armMountDistanceSource,
+   distanzaAttacchiStessaColonnaMm:l.armMountDistanceMm,
    offsetVeicoloMm:offset,
    formula:"richiesto = distanza tra perno braccio e punto presa veicolo spostato",
    verifica:"MIN <= richiesto <= MAX",
@@ -138,12 +158,12 @@ function run(){
  draw(l,v,c,offset,okAll);
 }
 function findBest(){
- for(let o=-800;o<=800;o+=10){
+ for(let o=-1000;o<=1000;o+=10){
    const l=lift(),v=veh();
    const c=calc(l,v,o);
    if(v.weightKg<=l.capacityKg && c.every(x=>x.ok)){vehicleOffset.value=o;run();return;}
  }
- alert("Nessuna posizione valida trovata nel range -800 / +800 mm.");
+ alert("Nessuna posizione valida trovata nel range -1000 / +1000 mm.");
 }
 function mountDistanceLines(l,sx,sy){
  const piv=getPivots(l);
@@ -163,7 +183,7 @@ function mountDistanceLines(l,sx,sy){
  <text x="${rightX+55}" y="${(yF+yR)/2+12}" fill="#facc15" font-size="17" font-weight="700">${d} mm</text>`;
 }
 function draw(l,v,c,offset,okAll){
- const W=1200,H=760,s=.16,cx=W/2,cy=H/2;
+ const W=1240,H=760,s=.16,cx=W/2,cy=H/2;
  const sx=x=>cx+x*s, sy=y=>cy+y*s;
  const half=l.internalColumnDistanceMm/2;
  const colL=sx(-half), colR=sx(half);
@@ -200,7 +220,25 @@ function draw(l,v,c,offset,okAll){
  <text x="${cx-38}" y="${H-50}" fill="#f8fafc" font-size="16">${l.internalColumnDistanceMm} mm</text>
  </svg>`;
 }
+function renderLiftCards(){
+ liftCards.innerHTML = DB.lifts.map(l=>`<div class="card"><h3>${l.code}</h3>
+ <table class="table">
+ <tr><th>Portata</th><td>${l.capacityKg} kg</td><th>Interno colonne</th><td>${l.internalColumnDistanceMm} mm</td></tr>
+ <tr><th>Attacchi bracci stessa colonna</th><td>${l.armMountDistanceMm} mm</td><th>Offset colonna/perno</th><td>${l.columnOffsetMm ?? "n.d."} mm</td></tr>
+ <tr><th>Braccio anteriore</th><td>${l.frontArm.minMm}-${l.frontArm.maxMm} mm</td><th>Braccio posteriore</th><td>${l.rearArm.minMm}-${l.rearArm.maxMm} mm</td></tr>
+ <tr><th>Altezza min/max</th><td>${l.minPadHeightMm}/${l.maxLiftHeightMm} mm</td><th>Peso</th><td>${l.netWeightKg} kg</td></tr>
+ <tr><th>Fonte</th><td colspan="3">${l.source}<br>${l.armMountDistanceSource}</td></tr>
+ </table></div>`).join("");
+}
+function downloadJSON(){
+ const blob = new Blob([JSON.stringify(DB,null,2)], {type:"application/json"});
+ const a = document.createElement("a");
+ a.href = URL.createObjectURL(blob);
+ a.download = "liftpointdb-v13.json";
+ a.click();
+}
 init();
+if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js").catch(()=>{});}
 </script>
 </body>
 </html>

@@ -1,15 +1,10 @@
-# LiftPointDB v12
+# LiftPointDB v13
 
-Correzione AL 40:
-- distanza tra attacco braccio anteriore e attacco braccio posteriore sulla stessa colonna = 430 mm.
+Aggiornamenti:
+- AL40 / ALB40: distanza attacchi bracci stessa colonna = 430 mm.
+- AL40: dati tecnici aggiornati da manuale rev. 01_2026.
+- AL55: dati tecnici aggiornati da manuale rev.1_01/2026.
+- Schede ponti con fonti e valori principali.
+- Simulatore con bracci telescopici, punto richiesto e offset veicolo.
 
-Il valore è nel database come:
-`armMountDistanceMm`.
-
-La quota viene usata per posizionare i perni dei bracci nel disegno.
-
-## v12
-
-Correzione ALB 40:
-- `armMountDistanceMm` corretto da 1200 mm a 430 mm.
-- Il valore 1200 mm del disegno ALB 40 è riferito alla pedana portante/basamento, non alla distanza tra attacco braccio anteriore e attacco braccio posteriore.
+Nota: i dati veicolo sono template e devono essere sostituiti con dati ufficiali del costruttore del veicolo.
